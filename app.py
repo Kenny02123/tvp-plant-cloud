@@ -363,18 +363,15 @@ def main_page():
         else: st.error(s["msg"])
 
     st.divider()
-    render_progress(st.session_state.user_area)
-    
-    st.divider()
-    
-    # 底部功能區
+
+    # 底部功能區 (移至上方)
     col1, col2 = st.columns(2)
     with col1:
          if st.button("📍 切換區域", use_container_width=True):
             st.session_state.user_area = None
             st.rerun()
             
-    # 填錯修正 (放在底部)
+    # 填錯修正 (移至上方)
     st.subheader("🛠️ 填錯修正")
     
     # 獲取已填寫的 TAG
@@ -406,6 +403,9 @@ def main_page():
                 pass
     except:
         pass
+
+    st.divider()
+    render_progress(st.session_state.user_area)
 
 # --- 程式入口 ---
 if not st.session_state.get("logged_in"):
