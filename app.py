@@ -57,19 +57,6 @@ INSPECTION_CONFIG = {
         "TI3490.1 油溫": (40.0, 65.0),
         "LI3490 油液位": None,
         "TI3497 調溫後進 TFC 油溫": (38.0, 48.0),
-        "PI3491.1 除霧風扇抽風壓力": (-2.0, 10.0),
-        "PI3491.2 除霧風扇抽風壓力": (0.0, 2.0),
-        "PI3497.4 gearbox lube oil pressure": (1.8, 3.0),
-        "聯軸器 確認加熱器周圍是否有結冰": None,
-    }
-}
-# 頁面配置
-st.set_page_config(page_title="TVP 30K 巡檢系統", page_icon="🏭", layout="centered")
-
-# 初始化狀態
-if "submit_status" not in st.session_state:
-    st.session_state.submit_status = None
-if "selected_category" not in st.session_state:
     st.session_state.selected_category = list(INSPECTION_CONFIG.keys())[0]
 
 # --- 工具函式 ---
@@ -283,23 +270,6 @@ def sidebar_nav():
     
     # 區域切換
     if st.sidebar.button("📍 切換區域", use_container_width=True):
-        st.session_state.user_area = None
-        st.rerun()
-        
-    st.sidebar.divider()
-    
-    # 設備快速跳轉
-    st.sidebar.subheader("🚀 設備快速跳轉")
-    for cat in INSPECTION_CONFIG.keys():
-        if st.sidebar.button(cat, use_container_width=True):
-            st.session_state.selected_category = cat
-            # 這裡不直接 rerun，而是透過 session_state 讓主頁面的 selectbox 更新
-            
-    st.sidebar.divider()
-    
-    # 登出
-    if st.sidebar.button("🚪 登出", use_container_width=True):
-        st.session_state.logged_in = False
         st.rerun()
 
 # --- 頁面渲染 ---
