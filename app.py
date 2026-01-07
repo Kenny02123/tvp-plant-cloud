@@ -273,12 +273,8 @@ def render_progress(area):
             st.write(f"📈 完成度：{done} / {total}")
 
         st.divider()
-        st.subheader("🛠️ 填錯修正")
-        if filled_tags:
-            st.selectbox("選擇要清除的紀錄", filled_tags, key="tag_to_clear")
-            st.button("🗑️ 清除紀錄", on_click=clear_record, type="primary")
-        else:
-            st.info("今日尚無可清除的紀錄")
+        # st.subheader("🛠️ 填錯修正") 
+        # (已移至上方按鈕觸發)
             
     except Exception as e:
         st.info(f"同步進度中... ({e})")
@@ -372,18 +368,59 @@ def main_page():
     with col1:
         st.button("🚀 提交紀錄", on_click=submit_data, use_container_width=True)
     with col2:
-        if st.button("↩️ 返回首頁", use_container_width=True):
-            st.session_state.user_area = None
+        if st.button("🛠️ 修改數值", use_container_width=True):
+            st.session_state.show_correction = not st.session_state.get("show_correction", False)
+
+    # 提交狀態反饋
+    if st.session_state.submit_status:
+        s = st.session_state.submit_status
+        if s["type"] == "success": 
+            st.success(s["msg"])
+            # 成功後自動清除狀態，避免一直顯示
+            time.sleep(1)
+            st.session_state.submit_status = None
             st.rerun()
+        else: 
+            st.error(s["msg"])
+            st.session_state.submit_status = None
+
+    # 修改/清除功能區域
+    if st.session_state.get("show_correction", False):
+        st.info("請選擇要清除的紀錄，清除後可重新填寫。")
+        try:
+            gc = get_gspread_client()
+            ws = get_or_init_worksheet(gc, SHEET_NAME, f"{st.session_state.user_area}_Data")
+            all_data = ws.get_all_values()
+            today_str = datetime.now().strftime("%Y/%m/%d")
+            
+            if all_data:
+                headers = all_data[0]
+                if today_str in headers:
+                    col_idx = headers.index(today_str)
+                    filled_tags = []
+                    for row in all_data[1:]:
+                        if len(row) > col_idx and row[col_idx]:
+                            filled_tags.append(row[0])
+                    
+                    if filled_tags:
+                        st.selectbox("選擇要清除的紀錄", filled_tags, key="tag_to_clear")
+                        st.button("🗑️ 確認清除", on_click=clear_record, type="primary")
+                    else:
+                        st.warning("今日尚無可清除的紀錄")
+                else:
+                    st.warning("今日尚無紀錄")
+        except Exception as e:
+            st.error(f"讀取資料失敗: {e}")
+
+    st.divider()
+    render_progress(st.session_state.user_area)
 
 # --- 程式入口 ---
 if not st.session_state.get("logged_in"):
     login_page()
 elif st.session_state.get("user_area") is None:
-    # 處理切換區域後的狀態
-    st.session_state.user_area = None # 確保是 None
-    # 顯示簡易區域選擇或直接回登入頁？
-    # 這裡簡單處理：若已登入但無區域，顯示區域選擇
+    # 處理切換區域後的狀態（如果尚未選擇區域）
+    st.session_state.user_area = None
     st.title("📍 請選擇巡檢區域")
     col1, col2 = st.columns(2)
     with col1:
