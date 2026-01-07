@@ -206,6 +206,12 @@ def clear_record():
         st.error(f"清除失敗: {e}")
 
 # --- 顯示進度與修正功能 ---
+
+def jump_to_tag(cat, pt):
+    st.session_state.selected_category = cat
+    st.session_state.category_selector = cat
+    st.session_state["target_point_jump"] = pt
+
 def render_progress(area):
     st.subheader(f"📊 今日待辦清單 ({area})")
     try:
@@ -283,13 +289,11 @@ def render_progress(area):
             
             if len(split_tag) == 2:
                 target_cat, target_point = split_tag
-                
-                if st.button(f"🔍 快速跳轉至：{target_point}", type="primary", use_container_width=True):
-                    # 更新 Session State 以觸發跳轉
-                    st.session_state.selected_category = target_cat
-                    st.session_state.category_selector = target_cat # 同步更新 Selectbox key
-                    st.session_state["target_point_jump"] = target_point
-                    st.rerun()
+                st.button(f"🔍 快速跳轉至：{target_point}", 
+                          type="primary", 
+                          use_container_width=True,
+                          on_click=jump_to_tag,
+                          args=(target_cat, target_point))
         else:
             st.button("🎉 今日巡檢已全數完成！", disabled=True, use_container_width=True)
 
