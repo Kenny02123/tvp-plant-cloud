@@ -122,21 +122,23 @@ def submit_data():
 
     note = st.session_state.get("note", "")
     
-    judgment = "✅"
+    judgment = ""
     
     # 判斷邏輯
     if config_value is None:
-        if "不正常" in str(reading_input): judgment = "🚨"
+        if "不正常" in str(reading_input): judgment = "不正常"
     else:
         try:
             val = float(reading_input)
-            if val < config_value[0] or val > config_value[1]: judgment = "🚨"
-        except: judgment = "🚨"
+            if val < config_value[0] or val > config_value[1]: judgment = "不正常"
+        except: judgment = "不正常"
 
-    # 格式：讀值 [時間] 判定 / 姓名
-    current_time = datetime.now().strftime('%H:%M')
+    # 格式：讀值 判定 / 姓名
     user_name = st.session_state.user_name
-    final_value = f"{reading_input} [{current_time}] {judgment} / {user_name}"
+    if judgment:
+        final_value = f"{reading_input} {judgment} / {user_name}"
+    else:
+        final_value = f"{reading_input} / {user_name}"
     
     if note: final_value += f" ({note})"
 
@@ -165,7 +167,7 @@ def submit_data():
         ws.update_cell(row_index, col_index, final_value)
         
         # 異常變紅
-        if judgment == "🚨":
+        if judgment == "不正常":
             try:
                 fmt = cellFormat(
                     backgroundColor=color(1, 0.8, 0.8), # 淺紅色背景
@@ -307,7 +309,7 @@ def sidebar_nav():
     st.sidebar.divider()
     
     # 登出
-    if st.sidebar.button("🚪 登出", use_container_width=True):
+    if st.sidebar.button("� 登出", use_container_width=True):
         st.session_state.logged_in = False
         st.rerun()
 
@@ -365,15 +367,14 @@ def main_page():
         st.number_input("輸入讀值", format="%.2f", step=0.1, key=input_key)
     
     st.text_input("備註 (Note)", key="note")
-    st.button("🚀 提交紀錄", on_click=submit_data, use_container_width=True)
-
-    if st.session_state.submit_status:
-        s = st.session_state.submit_status
-        if s["type"] == "success": st.success(s["msg"])
-        else: st.error(s["msg"])
-
-    st.divider()
-    render_progress(st.session_state.user_area)
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.button("🚀 提交紀錄", on_click=submit_data, use_container_width=True)
+    with col2:
+        if st.button("↩️ 返回首頁", use_container_width=True):
+            st.session_state.user_area = None
+            st.rerun()
 
 # --- 程式入口 ---
 if not st.session_state.get("logged_in"):
