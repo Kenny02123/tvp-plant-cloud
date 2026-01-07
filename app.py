@@ -266,13 +266,33 @@ def render_progress(area):
         # 進度條
         done = len([x for x in progress_data if x["狀態"] == "✅ 完成"])
         total = len(progress_data)
-        # 進度條
-        done = len([x for x in progress_data if x["狀態"] == "✅ 完成"])
-        total = len(progress_data)
         if total > 0:
             st.progress(done / total)
-            st.write(f"� 完成度：{done} / {total}")
+            st.write(f"📈 完成度：{done} / {total}")
             
+        # 快速跳轉未填點位邏輯
+        missing_items = [x for x in progress_data if x["狀態"] == "❌ 未填"]
+        
+        st.write("") # 間距
+        
+        if missing_items:
+            # 取得第一個未填項目的完整 TAG
+            first_missing = missing_items[0]["點位"]
+            # 解析 TAG: "Category - Point" -> ["Category", "Point"]
+            split_tag = first_missing.split(" - ", 1)
+            
+            if len(split_tag) == 2:
+                target_cat, target_point = split_tag
+                
+                if st.button(f"🔍 快速跳轉至：{target_point}", type="primary", use_container_width=True):
+                    # 更新 Session State 以觸發跳轉
+                    st.session_state.selected_category = target_cat
+                    st.session_state.category_selector = target_cat # 同步更新 Selectbox key
+                    st.session_state["target_point_jump"] = target_point
+                    st.rerun()
+        else:
+            st.button("🎉 今日巡檢已全數完成！", disabled=True, use_container_width=True)
+
     except Exception as e:
         st.info(f"同步進度中... ({e})")
 
@@ -340,7 +360,16 @@ def main_page():
     
     # 2. 選擇點位
     points = list(INSPECTION_CONFIG[category].keys())
-    point_name = st.selectbox("2. 選擇點位", points, key="point_selector")
+    
+    # 處理快速跳轉的目標點位
+    target_point = st.session_state.get("target_point_jump")
+    point_index = 0
+    if target_point and target_point in points:
+        point_index = points.index(target_point)
+        # 用完即丟，避免卡在該點位
+        del st.session_state["target_point_jump"]
+        
+    point_name = st.selectbox("2. 選擇點位", points, index=point_index, key="point_selector")
     
     # 3. 輸入數值
     config = INSPECTION_CONFIG[category][point_name]
