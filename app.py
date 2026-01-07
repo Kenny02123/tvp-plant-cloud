@@ -266,17 +266,12 @@ def render_progress(area):
         # 進度條
         done = len([x for x in progress_data if x["狀態"] == "✅ 完成"])
         total = len(progress_data)
+        # 進度條
+        done = len([x for x in progress_data if x["狀態"] == "✅ 完成"])
+        total = len(progress_data)
         if total > 0:
             st.progress(done / total)
-            st.write(f"📈 完成度：{done} / {total}")
-
-        st.divider()
-        st.subheader("🛠️ 填錯修正")
-        if filled_tags:
-            st.selectbox("選擇要清除的紀錄", filled_tags, key="tag_to_clear")
-            st.button("🗑️ 清除紀錄", on_click=clear_record, type="primary")
-        else:
-            st.info("今日尚無可清除的紀錄")
+            st.write(f"� 完成度：{done} / {total}")
             
     except Exception as e:
         st.info(f"同步進度中... ({e})")
@@ -286,13 +281,6 @@ def sidebar_nav():
     st.sidebar.title(f"👤 {st.session_state.user_name}")
     st.sidebar.info(f"班別: {st.session_state.user_shift} | 區域: {st.session_state.user_area}")
     
-    st.sidebar.divider()
-    
-    # 區域切換
-    if st.sidebar.button("📍 切換區域", use_container_width=True):
-        st.session_state.user_area = None
-        st.rerun()
-        
     st.sidebar.divider()
     
     # 設備快速跳轉
@@ -366,14 +354,8 @@ def main_page():
     
     st.text_input("備註 (Note)", key="note")
     
-    # 提交與返回按鈕
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.button("🚀 提交紀錄", on_click=submit_data, use_container_width=True)
-    with col2:
-        if st.button("↩️ 返回首頁", use_container_width=True):
-            st.session_state.user_area = None
-            st.rerun()
+    # 提交按鈕
+    st.button("🚀 提交紀錄", on_click=submit_data, use_container_width=True)
 
     if st.session_state.submit_status:
         s = st.session_state.submit_status
@@ -382,6 +364,48 @@ def main_page():
 
     st.divider()
     render_progress(st.session_state.user_area)
+    
+    st.divider()
+    
+    # 底部功能區
+    col1, col2 = st.columns(2)
+    with col1:
+         if st.button("📍 切換區域", use_container_width=True):
+            st.session_state.user_area = None
+            st.rerun()
+            
+    # 填錯修正 (放在底部)
+    st.subheader("🛠️ 填錯修正")
+    
+    # 獲取已填寫的 TAG
+    try:
+        gc = get_gspread_client()
+        if gc:
+            sh = gc.open(SHEET_NAME)
+            worksheet_title = f"{st.session_state.user_area}_Data"
+            try:
+                ws = sh.worksheet(worksheet_title)
+                all_data = ws.get_all_values()
+                today_str = datetime.now().strftime("%Y/%m/%d")
+                
+                if all_data and today_str in all_data[0]:
+                    col_idx = all_data[0].index(today_str)
+                    filled_tags = []
+                    for row in all_data[1:]:
+                        if len(row) > col_idx and row[col_idx]:
+                            filled_tags.append(row[0])
+                    
+                    if filled_tags:
+                        st.selectbox("選擇要清除的紀錄", filled_tags, key="tag_to_clear")
+                        st.button("🗑️ 清除紀錄", on_click=clear_record, type="primary")
+                    else:
+                        st.info("今日尚無可清除的紀錄")
+                else:
+                    st.info("尚無今日資料")
+            except:
+                pass
+    except:
+        pass
 
 # --- 程式入口 ---
 if not st.session_state.get("logged_in"):
